@@ -1,0 +1,6 @@
+env: "local" # окружение
+storage_path: "./storage/storage.db" # файл бд
+http_server: # конфигурация сервера
+  address: "localhost:8082"
+  timeout: 4s
+  idle_timeout: 30s
