@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -21,6 +22,8 @@ type HTTPServer struct {
 }
 
 func MustLoad() *Config {
+	_ = godotenv.Load()
+
 	// Путь до конфиг файла из env переменной
 	configPath := os.Getenv("CONFIG_PATH")
 	if configPath == "" {
