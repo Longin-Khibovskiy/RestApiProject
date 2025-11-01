@@ -7,6 +7,8 @@ import (
 	"github.com/Longin-Khibovskiy/RestApiProject.git/internal/config"
 	"github.com/Longin-Khibovskiy/RestApiProject.git/internal/lib/logger/sl"
 	"github.com/Longin-Khibovskiy/RestApiProject.git/internal/storage/sqlite"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 )
 
 const (
@@ -28,6 +30,12 @@ func main() {
 	if err != nil {
 		log.Error("failed to initialize storage", sl.Err(err))
 	}
+
+	router := chi.NewRouter()
+	router.Use(middleware.RequestID) // добавляет request_id в каждый запрос, для трейсинга
+	router.Use(middleware.Logger)    // логирование всех запросов
+	router.Use(middleware.Recoverer) // если где-то внутри сервера (обработчика запроса) произойдет паника, приложение не должно упасть
+	router.Use(middleware.URLFormat) // парсер URLов поступающих запросов
 }
 
 func setupLogger(env string) *slog.Logger {
