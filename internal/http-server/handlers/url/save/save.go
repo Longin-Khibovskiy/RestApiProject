@@ -1,6 +1,18 @@
 package save
 
-import resp "github.com/Longin-Khibovskiy/RestApiProject.git/internal/lib/api/response"
+import (
+	"errors"
+	"io"
+	"log/slog"
+	"net/http"
+
+	resp "github.com/Longin-Khibovskiy/RestApiProject.git/internal/lib/api/response"
+	"github.com/Longin-Khibovskiy/RestApiProject.git/internal/lib/logger/sl"
+	"github.com/Longin-Khibovskiy/RestApiProject.git/internal/lib/random"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/render"
+	"github.com/go-playground/validator/v10"
+)
 
 type Request struct {
 	URL   string `json:"url" validate:"required,url"`
@@ -14,4 +26,58 @@ type Response struct {
 
 type URLSaver interface {
 	SaveURL(URL, alias string) (int64, error)
+}
+
+const aliasLength = 6
+
+func New(log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		const op = "handlers.url.save.New"
+
+		//	Добавляем к текущему объекту логгера поля op и request_id
+		// они могут очень упростить нам жизнь в будущем
+		log = log.With(
+			slog.String("op", op),
+			slog.String("request_id", middleware.GetReqID(r.Context())),
+		)
+
+		//	создаем объект запроса и анмаршаллим в него запрос
+		var req Request
+
+		err := render.DecodeJSON(r.Body, &req)
+		if errors.Is(err, io.EOF) {
+			log.Error("request body is empty")
+
+			render.JSON(w, r, resp.Error("empty request")) // <----
+
+			return
+		}
+		if err != nil {
+			log.Error("failed to decode request body", sl.Err(err))
+
+			render.JSON(w, r, resp.Error("failed to decode request")) // <----
+
+			return
+		}
+
+		//	Лучше больше логов, чем меньше - лишнее мы легко сможем почистить, при необходимости
+		// А вот недостающую информацию мы уже не получим
+		log.Info("request body decoded", slog.Any("req", req))
+
+		//	создаем объект валидатора
+		// и передаем в него структуру, которую нужно провалидировать
+		if err := validator.New().Struct(req); err != nil {
+			validateErr := err.(validator.ValidationErrors)
+
+			log.Error("invalid request", sl.Err(err))
+
+			render.JSON(w, r, resp.Error(validateErr.Error()))
+			return
+		}
+
+		alias := req.Alias
+		if alias == "" {
+			alias = random.NewRandomString(aliasLength)
+		}
+	}
 }
