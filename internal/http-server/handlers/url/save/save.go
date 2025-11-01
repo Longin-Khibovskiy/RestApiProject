@@ -9,6 +9,7 @@ import (
 	resp "github.com/Longin-Khibovskiy/RestApiProject.git/internal/lib/api/response"
 	"github.com/Longin-Khibovskiy/RestApiProject.git/internal/lib/logger/sl"
 	"github.com/Longin-Khibovskiy/RestApiProject.git/internal/lib/random"
+	"github.com/Longin-Khibovskiy/RestApiProject.git/internal/storage"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/go-playground/validator/v10"
@@ -79,5 +80,23 @@ func New(log *slog.Logger, urlSaver URLSaver) http.HandlerFunc {
 		if alias == "" {
 			alias = random.NewRandomString(aliasLength)
 		}
+
+		id, err := urlSaver.SaveURL(req.URL, alias)
+		if errors.Is(err, storage.ErrURLExists) {
+			//	отдельно обрабатываем ситуацию, когда запись с таким алиасом уже существует
+			log.Info("url already exists", slog.String("url", req.URL))
+
+			render.JSON(w, r, resp.Error("failed to add url"))
+
+			return
+		}
+
+		log.Info("url added", slog.Int64("id", id))
+
+		responseOK(w, r, alias)
 	}
+}
+
+func responseOK(w http.ResponseWriter, r *http.Request, alias string) {
+	render.JSON(w, r, Response{resp.OK(), alias})
 }

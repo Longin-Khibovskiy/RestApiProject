@@ -3,7 +3,7 @@ package sl
 import (
 	"log/slog"
 
-	"github.com/Longin-Khibovskiy/RestApiProject.git/internal/lib/logger/handlers/slogdiscard"
+	_ "github.com/Longin-Khibovskiy/RestApiProject.git/internal/lib/logger/handlers/slogdiscard"
 )
 
 func Err(err error) slog.Attr {
