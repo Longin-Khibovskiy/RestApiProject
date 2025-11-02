@@ -4,7 +4,10 @@ import (
 	"log/slog"
 	"os"
 
+	"github.com/Longin-Khibovskiy/RestApiProject.git/internal/http-server/handlers/redirect"
+
 	"github.com/Longin-Khibovskiy/RestApiProject.git/internal/config"
+	"github.com/Longin-Khibovskiy/RestApiProject.git/internal/http-server/handlers/url/save"
 	mwLogger "github.com/Longin-Khibovskiy/RestApiProject.git/internal/http-server/middleware/logger"
 	"github.com/Longin-Khibovskiy/RestApiProject.git/internal/lib/logger/sl"
 	"github.com/Longin-Khibovskiy/RestApiProject.git/internal/storage/sqlite"
@@ -38,6 +41,8 @@ func main() {
 	router.Use(middleware.Recoverer) // если где-то внутри сервера (обработчика запроса) произойдет паника, приложение не должно упасть
 	router.Use(middleware.URLFormat) // парсер URLов поступающих запросов
 	router.Use(mwLogger.New(log))
+	router.Post("/", save.New(log, storage))
+	router.Get("/{alias}", redirect.New(log, storage))
 }
 
 func setupLogger(env string) *slog.Logger {
