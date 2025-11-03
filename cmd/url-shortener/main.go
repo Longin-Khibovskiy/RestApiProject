@@ -42,6 +42,14 @@ func main() {
 	router.Use(middleware.URLFormat) // парсер URLов поступающих запросов
 	router.Use(mwLogger.New(log))
 	router.Post("/", save.New(log, storage))
+	router.Route("/url", func(r chi.Router) {
+		//	Подключаем авторизацию
+		r.Use(middleware.BasicAuth("url-shortener", map[string]string{
+			//	Передаем в middleware креды
+			cfg.HTTPServer.User: cfg.HTTPServer.Password,
+			//	Если более одного пользователя, то можно добавить остальные пары по аналогии
+		}))
+	})
 	router.Get("/{alias}", redirect.New(log, storage))
 }
 
